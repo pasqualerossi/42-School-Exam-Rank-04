@@ -1,82 +1,65 @@
-#include <unistd.h>
 #include <string.h>
-#include <sys/wait.h>
+#include <unistd.h>
+#include <wait.h>
 
-int ft_putstr(char *str, char *arg)
+int tmp;
+
+int p(char *s)
 {
-	while (*str)
-		write(2, str++, 1);
-	while (arg && *arg)
-		write(2, arg++, 1);
-	write(2, "\n", 1);
-	return (1);
+	while (*s)
+		write(2, s++, 1);
+	return 1;
 }
 
-int ft_exec(char **av, int end, int tmp, char **env)
+int c(char **av, int i)
 {
-	av[end] = NULL;
-	dup2(tmp, STDIN_FILENO);
-	close(tmp);
-	execve(av[0], av, env);
-	return (ft_putstr("error: cannot execute ", av[0]));
+	if (i != 2)
+		return p("error: cd: bad arguments\n");
+	if (chdir(av[1]))
+		return p("error: cd: cannot change directory to ") & p(av[1]) & p("\n");
+	return 0;
 }
 
-int	main(int ac, char **av, char **env)
+int x(char **av, char **ep, int i)
+{
+	int tm2[2], r;
+	int pip = (av[i] && !strcmp(av[i], "|"));
+	
+	if (pip && (pipe(tm2)))
+		return p("error: fatal\n");
+	int pid = fork();
+	if (!pid)
+	{
+		av[i] = 0;
+		if (dup2(tmp, 0) == -1 | close(tmp) == -1 | (pip && (dup2(tm2[1], 1)
+			== -1 | close(tm2[0]) == -1 | close(tm2[1]) == -1)))
+			return p("error: fatal\n");
+		execve(*av, av, ep);
+		return p("error: cannot execute ") & p(*av) & p("\n");
+	}
+	if ((pip && (dup2(tm2[0], tmp) == -1 | close(tm2[0]) == -1
+		| close(tm2[1]) == -1)) | (!pip && dup2(0, tmp) == -1) |
+		waitpid(pid, &r, 0) == -1)
+		return p("error: fatal\n");
+	return WIFEXITED(r) && WEXITSTATUS(r);
+}
+
+int main(int ac, char **av, char **ep)
 {
 	(void)ac;
-	int i = 0;
-	int tmp = dup(STDIN_FILENO);
-
-	while (av[i] && av[i + 1])
+	int i = 0, r = 0;
+	tmp = dup(0);
+	
+	while (av[i] && av[++i])
 	{
-		av = &av[i + 1];
+		av = av + i;
 		i = 0;
-		while (av[i] && strcmp(av[i], ";") && strcmp(av[i], "|"))
+		while (av[i] && strcmp(av[i], "|") && strcmp(av[i], ";"))
 			i++;
-		if (!strcmp(av[0], "cd"))
-		{
-			if (i != 2)
-				ft_putstr("error: cd: bad arguments", NULL);
-			else if (chdir(av[1]))
-				ft_putstr("error: cd: cannot change directory to ", av[1]);
-		}
-		else if (i && (av[i] == NULL || !strcmp(av[i], ";")))
-		{
-			int pid = fork();
-			if (!pid)
-			{
-				if (ft_exec(av, i, tmp, env))
-					return (1);
-			}
-			else
-			{
-				close(tmp);
-				while (waitpid(-1, NULL, WUNTRACED) != -1)
-					;
-				tmp = dup(STDIN_FILENO);
-			}
-		}
-		else if (i && !strcmp(av[i], "|"))
-		{
-			int fd[2];
-			pipe(fd);
-			int pid = fork();
-			if (!pid)
-			{
-				dup2(fd[1], STDOUT_FILENO);
-				close(fd[0]);
-				close(fd[1]);
-				if (ft_exec(av, i, tmp, env))
-					return (1);
-			}
-			else
-			{
-				close(fd[1]);
-				close(tmp);
-				tmp = fd[0];
-			}
-		}
+		if (!strcmp(*av, "cd"))
+			r = c(av, i);
+		else if (i)
+			r = x(av, ep, i);
 	}
-	close(tmp);
-	return (0);
+	return ((dup2(0, tmp) == -1) && p("error: fatal\n")) | r;
 }
