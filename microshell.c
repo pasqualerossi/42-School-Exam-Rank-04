@@ -1,55 +1,57 @@
 #include <string.h>
 #include <unistd.h>
-#include <wait.h>
+#include <sys/wait.h>
 
-int tmp;
+int fd;
 
-int p(char *s)
+int err(char *s)
 {
 	while (*s)
 		write(2, s++, 1);
 	return 1;
 }
 
-int c(char **av, int i)
+int cdir(char **av, int i)
 {
 	if (i != 2)
-		return p("error: cd: bad arguments\n");
+		return err("error: cd: bad arguments\n");
 	if (chdir(av[1]))
-		return p("error: cd: cannot change directory to ") & p(av[1]) & p("\n");
+		return err("error: cd: cannot change directory to ") & err(av[1]) & err("\n");
 	return 0;
 }
 
-int x(char **av, char **ep, int i)
+int ex(char **av, char **envp, int i)
 {
-	int tm2[2], r;
+	int fds[2];
+	int	res;
 	int pip = (av[i] && !strcmp(av[i], "|"));
 	
-	if (pip && (pipe(tm2)))
-		return p("error: fatal\n");
+	if (pip && (pipe(fds)))
+		return err("error: fatal\n");
 	int pid = fork();
 	if (!pid)
 	{
 		av[i] = 0;
-		if (dup2(tmp, 0) == -1 | close(tmp) == -1 | (pip && (dup2(tm2[1], 1)
-			== -1 | close(tm2[0]) == -1 | close(tm2[1]) == -1)))
-			return p("error: fatal\n");
-		execve(*av, av, ep);
-		return p("error: cannot execute ") & p(*av) & p("\n");
+		if (dup2(fd, 0) == -1 | close(fd) == -1 | (pip && (dup2(fds[1], 1)
+			== -1 | close(fds[0]) == -1 | close(fds[1]) == -1)))
+			return err("error: fatal\n");
+		execve(*av, av, envp);
+		return err("error: cannot execute ") & err(*av) & err("\n");
 	}
-	if ((pip && (dup2(tm2[0], tmp) == -1 | close(tm2[0]) == -1
-		| close(tm2[1]) == -1)) | (!pip && dup2(0, tmp) == -1) |
-		waitpid(pid, &r, 0) == -1)
-		return p("error: fatal\n");
-	return WIFEXITED(r) && WEXITSTATUS(r);
+	if ((pip && (dup2(fds[0], fd) == -1 | close(fds[0]) == -1
+		| close(fds[1]) == -1)) | (!pip && dup2(0, fd) == -1) |
+		waitpid(pid, &res, 0) == -1)
+		return err("error: fatal\n");
+	return WIFEXITED(res) && WEXITSTATUS(res);
 }
 
-int main(int ac, char **av, char **ep)
+int main(int ac, char **av, char **envp)
 {
 	(void)ac;
-	int i = 0, r = 0;
-	tmp = dup(0);
-	
+	int i = 0;
+	int j = 0;
+
+	fd = dup(0);
 	while (av[i] && av[++i])
 	{
 		av = av + i;
@@ -57,9 +59,9 @@ int main(int ac, char **av, char **ep)
 		while (av[i] && strcmp(av[i], "|") && strcmp(av[i], ";"))
 			i++;
 		if (!strcmp(*av, "cd"))
-			r = c(av, i);
+			j = cdir(av, i);
 		else if (i)
-			r = x(av, ep, i);
+			j = ex(av, envp, i);
 	}
-	return ((dup2(0, tmp) == -1) && p("error: fatal\n")) | r;
+	return ((dup2(0, fd) == -1) && err("error: fatal\n")) | j;
 }
