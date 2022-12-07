@@ -1,75 +1,65 @@
-#include <libc.h>
+#include <string.h>
+#include <unistd.h>
+#include <wait.h>
 
-int	declare(char *str, char *arg)
+int tmp;
+
+int p(char *s)
 {
-	while (*str)
-		write(2, str++, 1);
-	if (arg)
-		while(*arg)
-			write(2, arg++, 1);
-	return (write(2, "\n", 1), 1);
+	while (*s)
+		write(2, s++, 1);
+	return 1;
 }
 
-int ft_ex(char *av[], int i, int TMP, char *env[])
+int c(char **av, int i)
 {
-	av[i] = NULL;
-	dup2(TMP, 0);
-	close(TMP);
-	execve(av[0], av, env);
-	return (declare("error: cannot execute ", av[0]));
+	if (i != 2)
+		return p("error: cd: bad arguments\n");
+	if (chdir(av[1]))
+		return p("error: cd: cannot change directory to ") & p(av[1]) & p("\n");
+	return 0;
 }
 
-int	main(int ac, char *av[], char *env[])
+int x(char **av, char **ep, int i)
 {
-	int	i, fd[2], TMP;
-	(void)ac;
-
-	i = 0;
-	TMP = dup(0);
+	int tm2[2], r;
+	int pip = (av[i] && !strcmp(av[i], "|"));
 	
-	while (av[i] && av[i + 1]) 
+	if (pip && (pipe(tm2)))
+		return p("error: fatal\n");
+	int pid = fork();
+	if (!pid)
 	{
-		av = &av[i + 1];
-		i = 0;
-		while (av[i] && strcmp(av[i], ";") && strcmp(av[i], "|"))
-			i++;
-		if (!strcmp(av[0], "cd")) 
-		{
-			if (i != 2)
-				declare("error: cd: bad arguments", NULL);
-			else if (chdir(av[1]) != 0)
-				declare("error: cd: cannot change directory to ", av[1]);
-		}
-		else if  (i != 0 && (av[i] == NULL || !strcmp(av[i], ";"))) 
-		{
-			if (!fork()) 
-			{
-				if (ft_ex(av, i, TMP, env))
-					return (1);
-			}
-			else 
-			{
-				close(TMP);
-				while(waitpid(-1, NULL, 0) != -1);
-			}
-			TMP = dup(0);
-		}
-		else if (i != 0 && !strcmp(av[i], "|")) 
-		{
-			pipe(fd);
-			if (!fork()) 
-			{
-				dup2(fd[1], 1);
-				close(fd[0]), close(fd[1]);
-				if (ft_ex(av, i, TMP, env))
-					return (1);
-			}
-			else 
-			{
-				close(fd[1]), close(TMP);
-				TMP = fd[0];
-			}
-		}
+		av[i] = 0;
+		if (dup2(tmp, 0) == -1 | close(tmp) == -1 | (pip && (dup2(tm2[1], 1)
+			== -1 | close(tm2[0]) == -1 | close(tm2[1]) == -1)))
+			return p("error: fatal\n");
+		execve(*av, av, ep);
+		return p("error: cannot execute ") & p(*av) & p("\n");
 	}
-	return (close(TMP), 0);
+	if ((pip && (dup2(tm2[0], tmp) == -1 | close(tm2[0]) == -1
+		| close(tm2[1]) == -1)) | (!pip && dup2(0, tmp) == -1) |
+		waitpid(pid, &r, 0) == -1)
+		return p("error: fatal\n");
+	return WIFEXITED(r) && WEXITSTATUS(r);
+}
+
+int main(int ac, char **av, char **ep)
+{
+	(void)ac;
+	int i = 0, r = 0;
+	tmp = dup(0);
+	
+	while (av[i] && av[++i])
+	{
+		av = av + i;
+		i = 0;
+		while (av[i] && strcmp(av[i], "|") && strcmp(av[i], ";"))
+			i++;
+		if (!strcmp(*av, "cd"))
+			r = c(av, i);
+		else if (i)
+			r = x(av, ep, i);
+	}
+	return ((dup2(0, tmp) == -1) && p("error: fatal\n")) | r;
 }
