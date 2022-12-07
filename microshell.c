@@ -1,67 +1,75 @@
-#include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include <libc.h>
 
-int fd;
-
-int err(char *s)
+int	declare(char *str, char *arg)
 {
-	while (*s)
-		write(2, s++, 1);
-	return 1;
+	while (*str)
+		write(2, str++, 1);
+	if (arg)
+		while(*arg)
+			write(2, arg++, 1);
+	return (write(2, "\n", 1), 1);
 }
 
-int cdir(char **av, int i)
+int ft_ex(char *av[], int i, int TMP, char *env[])
 {
-	if (i != 2)
-		return err("error: cd: bad arguments\n");
-	if (chdir(av[1]))
-		return err("error: cd: cannot change directory to ") & err(av[1]) & err("\n");
-	return 0;
+	av[i] = NULL;
+	dup2(TMP, 0);
+	close(TMP);
+	execve(av[0], av, env);
+	return (declare("error: cannot execute ", av[0]));
 }
 
-int ex(char **av, char **envp, int i)
+int	main(int ac, char *av[], char *env[])
 {
-	int fds[2];
-	int	res;
-	int pip = (av[i] && !strcmp(av[i], "|"));
-	
-	if (pip && (pipe(fds)))
-		return err("error: fatal\n");
-	int pid = fork();
-	if (!pid)
-	{
-		av[i] = 0;
-		if (dup2(fd, 0) == -1 | close(fd) == -1 | (pip && (dup2(fds[1], 1)
-			== -1 | close(fds[0]) == -1 | close(fds[1]) == -1)))
-			return err("error: fatal\n");
-		execve(*av, av, envp);
-		return err("error: cannot execute ") & err(*av) & err("\n");
-	}
-	if ((pip && (dup2(fds[0], fd) == -1 | close(fds[0]) == -1
-		| close(fds[1]) == -1)) | (!pip && dup2(0, fd) == -1) |
-		waitpid(pid, &res, 0) == -1)
-		return err("error: fatal\n");
-	return WIFEXITED(res) && WEXITSTATUS(res);
-}
-
-int main(int ac, char **av, char **envp)
-{
+	int	i, fd[2], TMP;
 	(void)ac;
-	int i = 0;
-	int j = 0;
 
-	fd = dup(0);
-	while (av[i] && av[++i])
+	i = 0;
+	TMP = dup(0);
+	
+	while (av[i] && av[i + 1]) 
 	{
-		av = av + i;
+		av = &av[i + 1];
 		i = 0;
-		while (av[i] && strcmp(av[i], "|") && strcmp(av[i], ";"))
+		while (av[i] && strcmp(av[i], ";") && strcmp(av[i], "|"))
 			i++;
-		if (!strcmp(*av, "cd"))
-			j = cdir(av, i);
-		else if (i)
-			j = ex(av, envp, i);
+		if (!strcmp(av[0], "cd")) 
+		{
+			if (i != 2)
+				declare("error: cd: bad arguments", NULL);
+			else if (chdir(av[1]) != 0)
+				declare("error: cd: cannot change directory to ", av[1]);
+		}
+		else if  (i != 0 && (av[i] == NULL || !strcmp(av[i], ";"))) 
+		{
+			if (!fork()) 
+			{
+				if (ft_ex(av, i, TMP, env))
+					return (1);
+			}
+			else 
+			{
+				close(TMP);
+				while(waitpid(-1, NULL, 0) != -1);
+			}
+			TMP = dup(0);
+		}
+		else if (i != 0 && !strcmp(av[i], "|")) 
+		{
+			pipe(fd);
+			if (!fork()) 
+			{
+				dup2(fd[1], 1);
+				close(fd[0]), close(fd[1]);
+				if (ft_ex(av, i, TMP, env))
+					return (1);
+			}
+			else 
+			{
+				close(fd[1]), close(TMP);
+				TMP = fd[0];
+			}
+		}
 	}
-	return ((dup2(0, fd) == -1) && err("error: fatal\n")) | j;
+	return (close(TMP), 0);
 }
