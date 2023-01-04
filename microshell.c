@@ -1,65 +1,94 @@
-#include <string.h>
-#include <unistd.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-int fd;
+int	g_fd;
 
-int err(char *string)
+static int	print(char *string)
 {
-	while (*string)
-		write(2, string++, 1);
-	return 1;
+	int	length = 0;
+
+	while (string[length])
+		length++;
+	write(2, string, length);
+	return (1);
 }
 
-int cdir(char **argv, int i)
+static int	executor(char **argv, int i, char **env)
 {
-	if (i != 2)
-		return err("error: cd: bad arguments\n");
-	if (chdir(argv[1]))
-		return err("error: cd: cannot change directory to ") & err(argv[1]) & err("\n");
-	return 0;
-}
+	int	status;
+	int	fd[2];
+	int	pid;
+	int	next = 0;
 
-int ex(char **argv, char **envp, int i)
-{
-	int fds[2];
-	int	res;
-	int pip = (argv[i] && !strcmp(argv[i], "|"));
-	
-	if (pip && (pipe(fds)))
-		return err("error: fatal\n");
-	int pid = fork();
-	if (!pid)
+	if (argv[i] && strcmp(argv[i], "|") == 0)
+		next = 1;
+	if (argv[i] == *argv)
+		return (0);
+	if (pipe(fd) == -1)
+		return (print("error: fatal\n"));
+	pid = fork();
+	if (pid == -1)
+		return (print("error: fatal\n"));
+	else if (pid == 0)
 	{
+		close(fd[0]);
+		dup2(g_fd, 0);
 		argv[i] = 0;
-		if (dup2(fd, 0) == -1 | close(fd) == -1 | (pip && (dup2(fds[1], 1) == -1 | close(fds[0]) == -1 | close(fds[1]) == -1)))
-			return err("error: fatal\n");
-		execve(*argv, argv, envp);
-		return err("error: cannot execute ") & err(*argv) & err("\n");
+		if (next)
+			dup2(fd[1], 1);
+		if (g_fd != 0)
+			close(g_fd);
+		close(fd[1]);
+		if (execve(*argv, argv, env) == -1)
+		{
+			print("error: cannot execute ");
+			print(*argv);
+			print("\n");
+			exit(0);
+		}
 	}
-	if ((pip && (dup2(fds[0], fd) == -1 | close(fds[0]) == -1 | close(fds[1]) == -1)) | (!pip && dup2(0, fd) == -1) | waitpid(pid, &res, 0) == -1)
-		return err("error: fatal\n");
-	return WIFEXITED(res) && WEXITSTATUS(res);
+	else
+	{
+		close(fd[1]);
+		waitpid(pid, &status, 0);
+		if (g_fd != 0)
+			close(g_fd);
+		if (next)
+			g_fd = dup(fd[0]);
+		close(fd[0]);
+	}
+	return (0);
 }
 
-int main(int argc, char **argv, char **envp)
+static int	builtin_cd(char **argv)
 {
-	(void)argc;
-	int i = 0;
-	int j = 0;
+	if (argv[2] && strcmp(argv[2], "|") != 0 && strcmp(argv[2], ";") != 0)
+		return (print("error: cd: bad arguments\n"));
+	if (chdir(argv[1]) == -1)
+		return (print("error: cannot execute cd\n"));
+	return (0);
+}
 
-	fd = dup(0);
-	
-	while (argv[i] && argv[++i])
+int	main(int argc, char **argv, char **env)
+{
+	int	i = 1;
+
+	if (argc == 1)
+		return (0);
+	argv[argc] = 0;
+	while (argv[i - 1] && argv[i])
 	{
 		argv = argv + i;
 		i = 0;
-		while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
+		while (argv[i] && strcmp(argv[i], "|") != 0 && strcmp(argv[i], ";") != 0)
 			i++;
 		if (!strcmp(*argv, "cd"))
-			j = cdir(argv, i);
-		else if (i)
-			j = ex(argv, envp, i);
+			builtin_cd(argv);
+		else
+			executor(argv, i, env);
+		i++;
 	}
-	return ((dup2(0, fd) == -1) && err("error: fatal\n")) | j;
 }
