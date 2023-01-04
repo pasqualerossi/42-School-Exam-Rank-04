@@ -3,7 +3,6 @@
 This exam has 1 question, microshell:
 
 - [Microshell](https://github.com/pasqualerossi/42-School-Exam-Rank-04/blob/main/microshell.c) 
-  - 4 Functions - 37 Lines
 
 if you can make it shorter, but readable, let me know!
 
