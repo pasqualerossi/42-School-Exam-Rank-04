@@ -8,14 +8,16 @@ if you can make the code shorter, but readable, let me know!
 
 <br>
 
+# Excepted File
+
+microshell.c
+
 # Subject Text
 
-Assignment name  : microshell
-
-Expected files   : *.c *.h
-
 Allowed functions: 
-- malloc, free, write, close, fork, waitpid, signal, kill, exit, chdir, execve, dup, dup2, pipe, strcmp, strncmp
+```
+malloc, free, write, close, fork, waitpid, signal, kill, exit, chdir, execve, dup, dup2, pipe, strcmp, strncmp
+```
 
 Write a program that will behave like executing a shell command
 
@@ -32,6 +34,7 @@ Write a program that will behave like executing a shell command
 	- a cd command will never be immediately followed or preceded by a "|"
 
 - You don't need to manage any type of wildcards (*, ~ etc...)
+
 - You don't need to manage environment variables ($BLA ...)
 
 - If a system call, except execve and chdir, returns an error your program should immediatly print "error: fatal" in STDERR followed by a '\n' and the program should exit
@@ -41,12 +44,14 @@ Write a program that will behave like executing a shell command
 - Your program should be able to manage more than hundreds of "|" even if we limit the number of "open files" to less than 30.
 
 for example this should work:
+```
 $>./microshell /bin/ls "|" /usr/bin/grep microshell ";" /bin/echo i love my microshell
 microshell
 i love my microshell
 $>
+```
 
-Hints:
+# Hints
 - Don't forget to pass the environment variable to execve
 - Do not leak file descriptors!
 
