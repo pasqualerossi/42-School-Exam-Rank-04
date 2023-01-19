@@ -1,94 +1,60 @@
-#include <sys/wait.h>
-#include <unistd.h>
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
-int	g_fd;
-
-static int	print(char *string)
+static void perr(char *string) 
 {
-	int	length = 0;
-
-	while (string[length])
-		length++;
-	write(2, string, length);
-	return (1);
+	while (*string)
+		write(2, string++, 1);
 }
 
-static int	executor(char **argv, int i, char **env)
+static int cd(char **argv, int i) 
 {
-	int	status;
-	int	fd[2];
-	int	pid;
-	int	next = 0;
+	if (i != 2)
+		return (perr("error: cd: bad arguments\n"), 1);
+	else if (chdir(argv[1]) == -1)
+		return (perr("error: cd: cannot change directory to "), perr(argv[1]), perr("\n"), 1);
+	return 0;
+}
 
-	if (argv[i] && strcmp(argv[i], "|") == 0)
-		next = 1;
-	if (argv[i] == *argv)
-		return (0);
-	if (pipe(fd) == -1)
-		return (print("error: fatal\n"));
-	pid = fork();
-	if (pid == -1)
-		return (print("error: fatal\n"));
-	else if (pid == 0)
-	{
-		close(fd[0]);
-		dup2(g_fd, 0);
+static int exec(char **argv, char **envp, int i) 
+{
+	int status;
+	int fds[2];
+	int pip = (argv[i] && !strcmp(argv[i], "|"));
+	int pid = fork();
+	
+	if (pip && pipe(fds) == -1)
+		return (perr("error: fatal\n"), 1);
+	if (!pid) {
 		argv[i] = 0;
-		if (next)
-			dup2(fd[1], 1);
-		if (g_fd != 0)
-			close(g_fd);
-		close(fd[1]);
-		if (execve(*argv, argv, env) == -1)
-		{
-			print("error: cannot execute ");
-			print(*argv);
-			print("\n");
-			exit(0);
-		}
+		if (pip && (dup2(fds[1], 1) == -1 || close(fds[0]) == -1 || close(fds[1]) == -1))
+			return (perr("error: fatal\n"), 1);
+		execve(*argv, argv, envp);
+		return (perr("error: cannot execute "), perr(*argv), perr("\n"), 1);
 	}
-	else
-	{
-		close(fd[1]);
-		waitpid(pid, &status, 0);
-		if (g_fd != 0)
-			close(g_fd);
-		if (next)
-			g_fd = dup(fd[0]);
-		close(fd[0]);
-	}
-	return (0);
+	waitpid(pid, &status, 0);
+	if (pip && (dup2(fds[0], 0) == -1 || close(fds[0]) == -1 || close(fds[1]) == -1))
+		return (perr("error: fatal\n"), 1);
+	return WIFEXITED(status) && WEXITSTATUS(status);
 }
 
-static int	builtin_cd(char **argv)
+int main(int argc, char **argv, char **envp) 
 {
-	if (argv[2] && strcmp(argv[2], "|") != 0 && strcmp(argv[2], ";") != 0)
-		return (print("error: cd: bad arguments\n"));
-	if (chdir(argv[1]) == -1)
-		return (print("error: cannot execute cd\n"));
-	return (0);
-}
-
-int	main(int argc, char **argv, char **env)
-{
-	int	i = 1;
-
-	if (argc == 1)
-		return (0);
-	argv[argc] = 0;
-	while (argv[i - 1] && argv[i])
+	(void) argc;
+	int status = 0;
+	int i = 0;
+	
+	while(*argv && *(argv + 1)) 
 	{
-		argv = argv + i;
-		i = 0;
-		while (argv[i] && strcmp(argv[i], "|") != 0 && strcmp(argv[i], ";") != 0)
-			i++;
+		argv++;
+		while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
+			i++;		
 		if (!strcmp(*argv, "cd"))
-			builtin_cd(argv);
-		else
-			executor(argv, i, env);
-		i++;
+			status = cd(argv, i);
+		else if (i)
+			status = exec(argv, envp, i);
+		argv += i;
 	}
+	return (status);
 }
