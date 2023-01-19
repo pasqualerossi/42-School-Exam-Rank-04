@@ -2,9 +2,9 @@
 
 This exam has 1 question, microshell:
 
-- [Microshell](https://github.com/pasqualerossi/42-School-Exam-Rank-04/blob/main/microshell.c) 
+- [Microshell.c](https://github.com/pasqualerossi/42-School-Exam-Rank-04/blob/main/microshell.c) 
 
-if you can make the code shorter, but readable, let me know!
+if you can make this code shorter, but readable, let me know!
 
 <br>
 
