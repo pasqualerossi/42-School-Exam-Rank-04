@@ -8,11 +8,11 @@ if you can make this code shorter, but readable, let me know!
 
 <br>
 
-# Excepted File
+## Excepted File
 
 microshell.c
 
-# Subject Text
+## Subject Text
 
 Allowed functions: 
 ```
@@ -54,10 +54,10 @@ i love my microshell
 $>
 ```
 
-# Hints
+## Hints
 - Don't forget to pass the environment variable to execve
 - Do not leak file descriptors!
 
-# Exam Practice
+## Exam Practice
 
 Practice the exam just like you would in the real exam - https://github.com/JCluzet/42_EXAM
