@@ -1,61 +1,79 @@
-#include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include <libc.h>
 
-static void perr(char *string) 
+int	write_error(char *string, char *argc)
 {
 	while (*string)
 		write(2, string++, 1);
+	if (argc)
+		while (*argc)
+			write(2, argc++, 1);
+	write(2, "\n", 1);
+	return (1);
 }
 
-static int cd(char **argv, int i) 
+int	ft_execute(char **argv, int i, int temporary, char **environment)
 {
-	if (i != 2)
-		return (perr("error: cd: bad arguments\n"), 1);
-	else if (chdir(argv[1]) == -1)
-		return (perr("error: cd: cannot change directory to "), perr(argv[1]), perr("\n"), 1);
-	return 0;
+	argv[i] = NULL;
+	dup2(temporary, 0);
+	close(temporary);
+	execve(argv[0], argv, environment);
+	return (write_error("error: cannot execute ", argv[0]));
 }
 
-static int exec(char **argv, char **envp, int i) 
+int	main(int argc, char **argv, char **environment)
 {
-	int status;
-	int fds[2];
-	int pip = (argv[i] && !strcmp(argv[i], "|"));
-	int pid = fork();
-	
-	if (pip && pipe(fds) == -1)
-		return (perr("error: fatal\n"), 1);
-	if (!pid) 
-	{
-		argv[i] = 0;
-		if (pip && (dup2(fds[1], 1) == -1 || close(fds[0]) == -1 || close(fds[1]) == -1))
-			return (perr("error: fatal\n"), 1);
-		execve(*argv, argv, envp);
-		return (perr("error: cannot execute "), perr(*argv), perr("\n"), 1);
-	}
-	waitpid(pid, &status, 0);
-	if (pip && (dup2(fds[0], 0) == -1 || close(fds[0]) == -1 || close(fds[1]) == -1))
-		return (perr("error: fatal\n"), 1);
-	return WIFEXITED(status) && WEXITSTATUS(status);
-}
-
-int main(int argc, char **argv, char **envp) 
-{
-	(void) argc;
-	int status = 0;
 	int i = 0;
-	
-	while(*argv && *(argv + 1)) 
+	int temporary_file_descriptor = dup(0);
+	int file_descriptor[2];
+	(void)argc;
+
+	while (argv[i] && argv[i + 1])
 	{
-		argv++;
-		while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
+		argv = &argv[i + 1];
+		i = 0;
+		while (argv[i] && strcmp(argv[i], ";") && strcmp(argv[i], "|"))
 			i++;
-		if (!strcmp(*argv, "cd"))
-			status = cd(argv, i);
-		else if (i)
-			status = exec(argv, envp, i);
-		argv += i;
+		if (strcmp(argv[0], "cd") == 0)
+		{
+			if (i != 2)
+				write_error("error: cd: bad arguments", NULL);
+			else if (chdir(argv[1]) != 0)
+				write_error("error: cd: cannot change directory to ", argv[1]);
+		}
+		else if (i != 0 && (argv[i] == NULL || strcmp(argv[i], ";") == 0))
+		{
+			if (fork() == 0)
+			{
+				if (ft_execute(argv, i, temporary_file_descriptor, environment))
+					return (1);
+			}
+			else
+			{
+				close(temporary_file_descriptor);
+				while (waitpid(-1, NULL, 0) != -1)
+					;
+				temporary_file_descriptor = dup(0);
+			}
+		}
+		else if (i != 0 && strcmp(argv[i], "|") == 0)
+		{
+			pipe(file_descriptor);
+			if (fork() == 0)
+			{
+				dup2(file_descriptor[1], 1);
+				close(file_descriptor[0]);
+				close(file_descriptor[1]);
+				if (ft_execute(argv, i, temporary_file_descriptor, environment))
+					return (1);
+			}
+			else
+			{
+				close(file_descriptor[1]);
+				close(temporary_file_descriptor);
+				temporary_file_descriptor = file_descriptor[0];
+			}
+		}
 	}
-	return (status);
+	close(temporary_file_descriptor);
+	return (0);
 }
