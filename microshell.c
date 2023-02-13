@@ -30,7 +30,7 @@ int main(int argc, char **argv, char **environment_variables)
 	{
 		argv = &argv[i + 1];
 		i = 0;
-		while(argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
+		while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
 			i++;
 		if (strcmp("cd", argv[0]) == 0)
 		{
