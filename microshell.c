@@ -2,9 +2,9 @@
 
 int	write_error(char *string, char *argv)
 {
-	while (*string)
+	while (string && *string)
 		write(2, string++, 1);
-	while (*argv)
+	while (argv && *argv)
 		write(2, argv++, 1);
 	write(2, "\n", 1);
 	return (1);
