@@ -2,7 +2,7 @@
 
 int	write_error(char *string, char *argv)
 {
-	while (*string)
+	while (string && *string)
 		write(2, string++, 1);
 	if (argv)
 		while(*argv)
