@@ -23,13 +23,11 @@ int	ft_exe(char **argv, int i, int temporary_file_descriptor, char **environment
 
 int	main(int argc, char **argv, char **environment_variables)
 {
-	int i;
+	int i = 0;
 	int fd[2];
-	int temporary_file_descriptor;
+	int temporary_file_descriptor = dup(STDIN_FILENO);
 	(void)argc;
 
-	i = 0;
-	temporary_file_descriptor = dup(STDIN_FILENO);
 	while (argv[i] && argv[i + 1])
 	{
 		argv = &argv[i + 1];
@@ -54,7 +52,6 @@ int	main(int argc, char **argv, char **environment_variables)
 			{
 				close(temporary_file_descriptor);
 				while(waitpid(-1, NULL, WUNTRACED) != -1)
-					;
 				temporary_file_descriptor = dup(STDIN_FILENO);
 			}
 		}
