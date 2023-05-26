@@ -34,7 +34,7 @@ int	main(int argc, char **argv, char **environment_variables)
 		i = 0;
 		while (argv[i] && strcmp(argv[i], ";") && strcmp(argv[i], "|"))
 			i++;
-		if (strcmp(argv[0], "cd") == 0) //cd
+		if (strcmp(argv[0], "cd") == 0)
 		{
 			if (i != 2)
 				write_error("error: cd: bad arguments", NULL);
