@@ -18,9 +18,9 @@ if you can make this code shorter, but readable, let me know!
 ## Subject Text
 
 Allowed functions: 
-```
-malloc, free, write, close, fork, waitpid, signal, kill, exit, chdir, execve, dup, dup2, pipe, strcmp, strncmp
-```
+
+> malloc, free, write, close, fork, waitpid, signal, kill, exit, chdir, execve, dup, dup2, pipe, strcmp, strncmp
+
 
 ## The Program
 Write a program that will behave like executing a shell command
