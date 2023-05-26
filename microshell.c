@@ -23,7 +23,7 @@ int	ft_exe(char **argv, int i, int temporary_file_descriptor, char **environment
 
 int	main(int argc, char **argv, char **environment_variables)
 {
-	int	i;
+	int i;
 	int fd[2];
 	int temporary_file_descriptor;
 	(void)argc;
@@ -58,7 +58,7 @@ int	main(int argc, char **argv, char **environment_variables)
 				temporary_file_descriptor = dup(STDIN_FILENO);
 			}
 		}
-		else if(i != 0 && strcmp(argv[i], "|") == 0)
+		else if (i != 0 && strcmp(argv[i], "|") == 0)
 		{
 			pipe(fd);
 			if ( fork() == 0)
