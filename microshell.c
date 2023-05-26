@@ -26,37 +26,37 @@ void execute_commands(char **argv, int temporary_file_descriptor, char **environ
     int fd[2];
 
     while (argv[i] && argv[i + 1]) 
-	{
+    {
         argv = &argv[i + 1];
         i = 0;
         while (argv[i] && strcmp(argv[i], ";") && strcmp(argv[i], "|"))
             i++;
         if (strcmp(argv[0], "cd") == 0) 
-		{
+	{
             if (i != 2)
                 write_error("error: cd: bad arguments", NULL);
             else if (chdir(argv[1]) != 0)
                 write_error("error: cd: cannot change directory to ", argv[1]);
         }
         else if (i != 0 && (argv[i] == NULL || strcmp(argv[i], ";") == 0)) 
-		{
+	{
             if (fork() == 0) 
-			{
+	    {
                 if (ft_exe(argv, i, temporary_file_descriptor, environment_variables))
                     _exit(1);
             }
-            else 
-			{
+            else
+	    {
                 close(temporary_file_descriptor);
                 while (waitpid(-1, NULL, WUNTRACED) != -1)
                     temporary_file_descriptor = dup(STDIN_FILENO);
             }
         }
         else if (i != 0 && strcmp(argv[i], "|") == 0) 
-		{
+	{
             pipe(fd);
             if (fork() == 0) 
-			{
+	    {
                 dup2(fd[1], STDOUT_FILENO);
                 close(fd[0]);
                 close(fd[1]);
@@ -64,7 +64,7 @@ void execute_commands(char **argv, int temporary_file_descriptor, char **environ
                     _exit(1);
             }
             else 
-			{
+	    {
                 close(fd[1]);
                 close(temporary_file_descriptor);
                 temporary_file_descriptor = fd[0];
