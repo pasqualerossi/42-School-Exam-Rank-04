@@ -72,3 +72,11 @@ void execute_commands(char **argv, int tmp_fd, char **env)
     }
     close(tmp_fd);
 }
+
+int main(int argc, char **argv, char **env) 
+{
+    int tmp_fd = dup(STDIN_FILENO);
+    (void)argc;
+    execute_commands(argv, tmp_fd, env);
+    return 0;
+}
