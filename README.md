@@ -64,3 +64,69 @@ $>
 ## Exam Practice Tool
 
 Practice the exam just like you would in the real exam - https://github.com/JCluzet/42_EXAM
+
+# Code Commented
+```c
+int err(char *str)
+{
+    while (*str)
+        write(2, str++, 1); // Writes each character of 'str' to standard error (file descriptor 2)
+    return 1;
+}
+
+int cd(char **argv, int i)
+{
+    if (i != 2)
+        return err("error: cd: bad arguments\n"); // Calls 'err' function and returns 1 if the number of arguments is not 2
+    else if (chdir(argv[1]) == -1)
+        return err("error: cd: cannot change directory to "), err(argv[1]), err("\n"); // Calls 'err' function with error messages if 'chdir' fails
+    return 0;
+}
+
+int exec(char **argv, char **envp, int i)
+{
+    int fd[2];
+    int status;
+    int has_pipe = argv[i] && !strcmp(argv[i], "|"); // Checks if there is a pipe symbol ('|') present in the argument array
+
+    if (has_pipe && pipe(fd) == -1)
+        return err("error: fatal\n"); // Calls 'err' function and returns 1 if pipe creation fails
+
+    int pid = fork(); // Creates a child process
+    if (!pid)
+    {
+        argv[i] = 0;
+        if (has_pipe && (dup2(fd[1], 1) == -1 || close(fd[0]) == -1 || close(fd[1]) == -1))
+            return err("error: fatal\n"); // Calls 'err' function and returns 1 if setting up pipe I/O fails
+        execve(*argv, argv, envp); // Executes the command specified by 'argv'
+        return err("error: cannot execute "), err(*argv), err("\n"); // Calls 'err' function if execution fails
+    }
+
+    waitpid(pid, &status, 0); // Waits for the child process to complete
+    if (has_pipe && (dup2(fd[0], 0) == -1 || close(fd[0]) == -1 || close(fd[1]) == -1))
+        return err("error: fatal\n"); // Calls 'err' function and returns 1 if restoring standard I/O fails
+    return WEXITSTATUS(status); // Extracts the exit status of the child process
+}
+
+int main(int argc, char **argv, char **envp)
+{
+    int i = 0;
+    int status = 0;
+
+    if (argc > 1)
+    {
+        while (argv[i] && argv[++i])
+        {
+            argv += i;
+            i = 0;
+            while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
+                i++; // Counts the number of arguments until a pipe ('|') or semicolon (';') is encountered
+            if (!strcmp(*argv, "cd"))
+                status = cd(argv, i); // Calls 'cd' function if the first argument is "cd"
+            else if (i)
+                status = exec(argv, envp, i); // Calls 'exec' function for executing a command
+        }
+    }
+    return status; // Returns the status of the last command executed
+}
+```
