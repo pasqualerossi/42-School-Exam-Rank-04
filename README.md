@@ -113,7 +113,7 @@ int exec(char **argv, char **envp, int i)
     waitpid(pid, &status, 0); // Wait for the child process to finish
     if (has_pipe && (dup2(fd[0], 0) == -1 || close(fd[0]) == -1 || close(fd[1]) == -1))
         return err("error: fatal\n"); // Return an error if pipe redirection or closing fails
-    return WEXITSTATUS(status); // Return the exit status of the child process
+    return WIFEXITED(status) && WEXITSTATUS(status);
 }
 
 int main(int argc, char **argv, char **envp) 
