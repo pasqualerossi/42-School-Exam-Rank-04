@@ -70,7 +70,6 @@ Practice the exam just like you would in the real exam - https://github.com/JClu
 # Code Commented
 ```c
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <string.h>
 
@@ -115,11 +114,14 @@ int exec(char **argv, char **envp, int i)
     waitpid(pid, &status, 0); // Wait for the child process to finish
     if (has_pipe && (dup2(fd[0], 0) == -1 || close(fd[0]) == -1 || close(fd[1]) == -1))
         return err("error: fatal\n"); // Return an error if pipe redirection or closing fails
+    if (argv[i] && !strcmp(argv[i], ";"))
+        dup2(original_stdin, 0); // Restore stdin for the commands starting after ;
     return WIFEXITED(status) && WEXITSTATUS(status);
 }
 
 int main(int argc, char **argv, char **envp) 
 {
+    int    original_stdin = dup(0); // make a copy of stdin
     int    i = 0;
     int    status = 0;
 
@@ -134,7 +136,7 @@ int main(int argc, char **argv, char **envp)
             if (!strcmp(*argv, "cd"))
                 status = cd(argv, i); // Execute cd command
             else if (i)
-                status = exec(argv, envp, i); // Execute other commands
+                status = exec(argv, envp, i, original_stdin); // Execute other commands
         }
     }
     return status; // Return the status of the last executed command

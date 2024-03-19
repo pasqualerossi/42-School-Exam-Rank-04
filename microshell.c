@@ -16,7 +16,7 @@ int cd(char **argv, int i)
     return 0;
 }
 
-int exec(char **argv, char **envp, int i) 
+int exec(char **argv, char **envp, int i, int original_stdin) 
 {
     int fd[2];
     int status;
@@ -38,11 +38,14 @@ int exec(char **argv, char **envp, int i)
     waitpid(pid, &status, 0);
     if (has_pipe && (dup2(fd[0], 0) == -1 || close(fd[0]) == -1 || close(fd[1]) == -1))
         return err("error: fatal\n");
+    if (argv[i] && !strcmp(argv[i], ";"))
+        dup2(original_stdin, 0);
     return WIFEXITED(status) && WEXITSTATUS(status);
 }
 
 int main(int argc, char **argv, char **envp) 
 {
+    int    original_stdin = dup(0);
     int    i = 0;
     int    status = 0;
 
@@ -57,7 +60,7 @@ int main(int argc, char **argv, char **envp)
             if (!strcmp(*argv, "cd"))
                 status = cd(argv, i);
             else if (i)
-                status = exec(argv, envp, i);
+                status = exec(argv, envp, i, original_stdin);
         }
     }
     return status;
