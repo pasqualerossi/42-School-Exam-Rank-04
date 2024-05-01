@@ -1,4 +1,6 @@
-#include "microshell.h"
+#include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 int err(char *str)
 {
