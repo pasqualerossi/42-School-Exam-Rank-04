@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+extern char **environ;
+
 int err(char *str)
 {
     while (*str)
@@ -38,7 +40,7 @@ int exec(char **argv, int i)
             return err("error: fatal\n");
         if (!strcmp(*argv, "cd"))
             return cd(argv, i);
-        execve(*argv, argv, __environ);
+        execve(*argv, argv, environ);
         return err("error: cannot execute "), err(*argv), err("\n");
     }
 
