@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+extern char **environ;
+
 int err(char *str)
 {
     while (*str)
@@ -18,7 +20,7 @@ int cd(char **argv, int i)
     return 0;
 }
 
-int exec(char **argv, char **envp, int i)
+int exec(char **argv, int i)
 {
     int fd[2];
     int status;
@@ -38,7 +40,7 @@ int exec(char **argv, char **envp, int i)
             return err("error: fatal\n");
         if (!strcmp(*argv, "cd"))
             return cd(argv, i);
-        execve(*argv, argv, envp);
+        execve(*argv, argv, environ);
         return err("error: cannot execute "), err(*argv), err("\n");
     }
 
@@ -48,7 +50,7 @@ int exec(char **argv, char **envp, int i)
     return WIFEXITED(status) && WEXITSTATUS(status);
 }
 
-int main(int argc, char **argv, char **envp)
+int main(int argc, char **argv)
 {
     int    i = 0;
     int    status = 0;
@@ -61,7 +63,7 @@ int main(int argc, char **argv, char **envp)
         while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
             i++;
         if (i)
-            status = exec(argv, envp, i);
+            status = exec(argv, i);
     }
     return status;
 }
