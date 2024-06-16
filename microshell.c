@@ -55,15 +55,17 @@ int main(int argc, char **argv)
     int    i = 0;
     int    status = 0;
 
-    (void)argc;
-    while (argv[i] && argv[++i])
+    if (argc > 1)
     {
-        argv += i;
-        i = 0;
-        while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
-            i++;
-        if (i)
-            status = exec(argv, i);
+        while (argv[i] && argv[++i])
+        {
+            argv += i;
+            i = 0;
+            while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
+                i++;
+            if (i)
+                status = exec(argv, i);
+        }
     }
     return status;
 }
