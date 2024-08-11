@@ -81,11 +81,11 @@ int cd(char **argv, int i)
 {
     // If the number of arguments is not 2, print error and exit
     if (i != 2)
-        err("error: cd: bad arguments\n"), exit(1);
+        return err("error: cd: bad arguments\n"), 1;
     // If changing the directory fails, print error and exit
     if (chdir(argv[1]) == -1)
-        err("error: cd: cannot change directory to "), err(argv[1]), err("\n"), exit(1);
-    exit (0);
+        return err("error: cd: cannot change directory to "), err(argv[1]), err("\n"), 1;
+    return 0;
 }
 
 // Function to set pipe
@@ -107,7 +107,7 @@ int exec(char **argv, int i, char **envp)
 
     // If the command is 'cd', execute it
     if (!has_pipe && !strcmp(*argv, "cd"))
-        cd(argv, i);
+        return cd(argv, i);
 
     // If the command includes a pipe and creating the pipe fails, print error and exit
     if (has_pipe && pipe(fd) == -1)

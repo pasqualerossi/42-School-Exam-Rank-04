@@ -12,10 +12,10 @@ void err(char *str)
 int cd(char **argv, int i)
 {
     if (i != 2)
-        err("error: cd: bad arguments\n"), exit(1);
+        return err("error: cd: bad arguments\n"), 1;
     if (chdir(argv[1]) == -1)
-        err("error: cd: cannot change directory to "), err(argv[1]), err("\n"), exit(1);
-    exit(0);
+        return err("error: cd: cannot change directory to "), err(argv[1]), err("\n"), 1;
+    return 0;
 }
 
 void set_pipe(int has_pipe, int *fd, int end)
@@ -31,7 +31,7 @@ int	exec(char **argv, int i, char **envp)
 	has_pipe = argv[i] && !strcmp(argv[i], "|");
 
     if (!has_pipe && !strcmp(*argv, "cd"))
-        cd(argv, i);
+        return cd(argv, i);
 
     if (has_pipe && pipe(fd) == -1)
         err("error: fatal\n"), exit(1);
@@ -42,7 +42,7 @@ int	exec(char **argv, int i, char **envp)
         argv[i] = 0;
 		set_pipe(has_pipe, fd, 1);
         if (!strcmp(*argv, "cd"))
-            cd(argv, i);
+        	return cd(argv, i);
         execve(*argv, argv, envp);
         err("error: cannot execute "), err(*argv), err("\n"), exit(1);
     }
