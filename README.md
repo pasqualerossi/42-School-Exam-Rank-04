@@ -66,6 +66,7 @@ $>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <stdlib.h>
 
 // Function to write an error message to stderr
 int err(char *str)
