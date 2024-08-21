@@ -122,7 +122,7 @@ int exec(char **argv, int i, char **envp)
         set_pipe(has_pipe, fd, 1);
         // If the command is 'cd', execute it
         if (!strcmp(*argv, "cd"))
-            return cd(argv, i);
+            exit(cd(argv, i));
         // Execute the command
         execve(*argv, argv, envp);
         // If executing the command fails, print error and exit
@@ -139,13 +139,13 @@ int exec(char **argv, int i, char **envp)
 
 int main(int, char **argv, char **envp)
 {
-    int    i = 1, status = 0;
+    int    i = 0, status = 0;
 
-    // Skip first arg and loop through each following argument
+    // Loop through each following argument
     while (argv[i])
     {
-        // Move the pointer to the next argument
-    	argv += i;
+        // Move the pointer to the next argument jumping over the las delimeter / first argument
+    	argv += i + 1;
     	i = 0;
         // Loop through each argument until a pipe or semicolon is found
     	while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
@@ -153,8 +153,6 @@ int main(int, char **argv, char **envp)
         // If there are arguments, execute them
     	if (i)
 			status = exec(argv, i, envp);
-        // If not at the end of argv increment i
-		i += (argv[i] != NULL);
     }
     return status;
 }
