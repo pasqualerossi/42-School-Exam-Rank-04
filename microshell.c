@@ -42,7 +42,7 @@ int	exec(char **argv, int i, char **envp)
 		argv[i] = 0;
 		set_pipe(has_pipe, fd, 1);
 		if (!strcmp(*argv, "cd"))
-			return cd(argv, i);
+			exit(cd(argv, i));
 		execve(*argv, argv, envp);
 		err("error: cannot execute "), err(*argv), err("\n"), exit(1);
 	}
@@ -53,17 +53,16 @@ int	exec(char **argv, int i, char **envp)
 
 int main(int, char **argv, char **envp)
 {
-	int i = 1, status = 0;
+	int i = 0, status = 0;
 
 	while (argv[i])
 	{
-		argv += i;
+		argv += i + 1;
 		i = 0;
 		while (argv[i] && strcmp(argv[i], "|") && strcmp(argv[i], ";"))
 			i++;
 		if (i)
 			status = exec(argv, i, envp);
-		i += (argv[i] != NULL);
 	}
 	return status;
 }
