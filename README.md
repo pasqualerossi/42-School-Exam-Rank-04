@@ -144,7 +144,7 @@ int main(int, char **argv, char **envp)
     // Loop through each following argument
     while (argv[i])
     {
-        // Move the pointer to the next argument jumping over the las delimeter / first argument
+        // Move the pointer to the next argument after the last delimeter / first argument
     	argv += i + 1;
     	i = 0;
         // Loop through each argument until a pipe or semicolon is found
