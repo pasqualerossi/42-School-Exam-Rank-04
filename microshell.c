@@ -36,7 +36,8 @@ int	exec(char **argv, int i, char **envp)
 	if (has_pipe && pipe(fd) == -1)
 		err("error: fatal\n"), exit(1);
 
-	pid = fork();
+	if ((pid = fork()) == -1)
+		err("error: fatal\n"), exit(1);
 	if (!pid)
 	{
 		argv[i] = 0;
