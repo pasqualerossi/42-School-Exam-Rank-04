@@ -8,7 +8,7 @@ if you can make this code shorter, but readable, let me know!
 
 <br>
 
-## Excepted Files
+## Accepted Files
 
 - microshell.c
 
