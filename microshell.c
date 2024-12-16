@@ -13,7 +13,7 @@ int cd(char **argv, int i)
 {
 	if (i != 2)
 		return err("error: cd: bad arguments\n"), 1;
-	if (chdir(argv[1]) == -1)
+	if (chdir(argv[1]) < 0)
 		return err("error: cd: cannot change directory to "), err(argv[1]), err("\n"), 1;
 	return 0;
 }
