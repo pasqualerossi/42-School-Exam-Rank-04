@@ -70,7 +70,7 @@ YEAH
 #include <stdlib.h>
 
 // Function to write an error message to stderr
-int err(char *str)
+void err(char *str)
 {
     // Loop through each character in the string and write it to stderr
     while (*str)
